@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <android.opengl.GLSurfaceView
+        android:id="@+id/surfaceView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- Рамка-видоискатель и стрелка к объекту вне кадра. Тапы пропускает к AR-поверхности. -->
+    <com.example.imagetracking.ar.GuideOverlayView
+        android:id="@+id/guideOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- Статус: координаты, зона, ближайшие метки -->
+    <TextView
+        android:id="@+id/tvStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:background="#99000000"
+        android:padding="8dp"
+        android:text="Ожидание GPS…"
+        android:textColor="#FFFFFF"
+        android:textSize="12sp" />
+
+    <!-- Подсказка AR-режима («наведите камеру на поверхность» и т.п.) — под строкой статуса -->
+    <TextView
+        android:id="@+id/tvHint"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="140dp"
+        android:layout_marginEnd="24dp"
+        android:background="#AA000000"
+        android:gravity="center"
+        android:padding="12dp"
+        android:textColor="#FFFFFF"
+        android:textSize="15sp"
+        android:visibility="gone" />
+
+    <!-- Сообщение о процессе поиска якорей, пока AR настраивается. Скрывается, когда камера начала отслеживание. -->
+    <LinearLayout
+        android:id="@+id/searchPanel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="24dp"
+        android:background="#CC000000"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <ProgressBar
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:indeterminate="true"
+            android:indeterminateTint="#FFFFFF" />
+
+        <TextView
+            android:id="@+id/tvSearch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:gravity="center"
+            android:text="Настройка AR…\nИдёт поиск опорных точек (якорей).\nМедленно двигайте телефон и наведите камеру на пол или стол с узором."
+            android:textColor="#FFFFFF"
+            android:textSize="15sp" />
+    </LinearLayout>
+
+    <!-- Кнопки взаимодействия: появляются, когда объект найден (в кадре) -->
+    <LinearLayout
+        android:id="@+id/interactionPanel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end|center_vertical"
+        android:layout_marginEnd="8dp"
+        android:background="#99000000"
+        android:orientation="vertical"
+        android:padding="6dp"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/tvFocused"
+            android:layout_width="96dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:paddingBottom="4dp"
+            android:text="Объект"
+            android:textColor="#FFD60A"
+            android:textSize="11sp" />
+
+        <!-- Переключиться на следующий объект в кадре; видна, только когда в кадре есть другой объект -->
+        <Button
+            android:id="@+id/btnSwitch"
+            android:layout_width="96dp"
+            android:layout_height="48dp"
+            android:text="→ Объект"
+            android:textAllCaps="false"
+            android:textSize="12sp"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/btnScaleUp"
+            android:layout_width="96dp"
+            android:layout_height="48dp"
+            android:text="+ Больше"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/btnScaleDown"
+            android:layout_width="96dp"
+            android:layout_height="48dp"
+            android:text="− Меньше"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/btnRotate"
+            android:layout_width="96dp"
+            android:layout_height="48dp"
+            android:text="Повернуть"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/btnRecolor"
+            android:layout_width="96dp"
+            android:layout_height="48dp"
+            android:text="Цвет"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/btnDelete"
+            android:layout_width="96dp"
+            android:layout_height="48dp"
+            android:text="Удалить"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:background="#99000000"
+        android:orientation="vertical"
+        android:padding="6dp">
+
+        <!-- Панель отладки: эмуляция GPS -->
+        <LinearLayout
+            android:id="@+id/debugPanel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <CheckBox
+                android:id="@+id/cbFake"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Эмуляция GPS (шаг 10 м)"
+                android:textColor="#FFFFFF" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btnWest"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="← З" />
+
+                <Button
+                    android:id="@+id/btnNorth"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="↑ С" />
+
+                <Button
+                    android:id="@+id/btnSouth"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="↓ Ю" />
+
+                <Button
+                    android:id="@+id/btnEast"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="→ В" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btnClearObjects"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Убрать объекты"
+                    android:textSize="12sp" />
+
+                <Button
+                    android:id="@+id/btnClearPois"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Удалить метки"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Нижний ряд: все кнопки одной высоты, поэтому в одну линию -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:baselineAligned="false"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btnPlaceHere"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="3"
+                android:gravity="center"
+                android:maxLines="2"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"
+                android:text="Поставить метку здесь"
+                android:textAllCaps="false"
+                android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/btnDeletePoi"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="3"
+                android:gravity="center"
+                android:maxLines="2"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"
+                android:text="Удалить метку"
+                android:textAllCaps="false"
+                android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/btnContent"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="2"
+                android:gravity="center"
+                android:maxLines="2"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"
+                android:text="Ракета"
+                android:textAllCaps="false"
+                android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/btnDebug"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:maxLines="2"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"
+                android:text="⚙"
+                android:textAllCaps="false"
+                android:textSize="12sp" />
+        </LinearLayout>
+    </LinearLayout>
+</FrameLayout>
