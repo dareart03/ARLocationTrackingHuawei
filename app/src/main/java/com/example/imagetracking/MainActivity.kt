@@ -142,6 +142,8 @@ class MainActivity : AppCompatActivity(), PlacementRenderer.Callbacks, Placement
             } else {
                 selectedContent = next
                 updateContentButton()
+                // если мы стоим в зоне метки, модель меняется и у неё: тап поставит выбранную модель
+                locationManager.setActiveContent(next.id)?.let { toast("Метка «${it.name}»: теперь ${next.title}") }
             }
         }
 

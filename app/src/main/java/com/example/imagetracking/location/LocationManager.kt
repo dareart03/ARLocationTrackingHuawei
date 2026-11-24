@@ -101,6 +101,19 @@ class LocationManager(context: Context, private val storage: PoiStorage) : Locat
         return poi
     }
 
+    /** Сменить модель у метки, в зоне которой мы стоим (сохраняется в базу). null — мы не в зоне. */
+    fun setActiveContent(contentId: String): Poi? {
+        val cur = tracker.active ?: return null
+        val updated = cur.copy(contentId = contentId)
+        val i = pois.indexOfFirst { it.id == cur.id }
+        if (i >= 0) pois[i] = updated
+        storage.insert(updated)
+        tracker.replaceActive(updated)
+        zoneListener?.onPoiChanged(updated)
+        onUpdate?.invoke()
+        return updated
+    }
+
     /**
      * Удалить одну метку (из списка и из базы). Если пользователь был в её зоне, придёт событие выхода
      * (а если он при этом стоит ещё и в другой зоне, сразу — вход в неё).

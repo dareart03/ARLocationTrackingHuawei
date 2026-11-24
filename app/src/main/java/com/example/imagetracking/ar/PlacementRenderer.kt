@@ -79,7 +79,8 @@ class PlacementRenderer(
     private var uModel = 0
     private var uTint = 0
     private var uLight = 0
-    private var rocket: ObjModel? = null
+    /** Загруженные модели по id из [ContentCatalog]. */
+    private val models = HashMap<String, ObjModel>()
     private lateinit var quad: ObjModel
 
     private var width = 1
@@ -214,12 +215,15 @@ class PlacementRenderer(
         uModel = GLES20.glGetUniformLocation(program, "uModel")
         uTint = GLES20.glGetUniformLocation(program, "uTint")
         uLight = GLES20.glGetUniformLocation(program, "uLight")
-        rocket = try {
-            ObjLoader.load(context, "rocket.obj")
-        } catch (e: Exception) {
-            Log.e(TAG, "model load failed: $e")
-            callbacks.onMessage("Не удалось загрузить модель: ${e.javaClass.simpleName}")
-            null
+        // все модели из каталога; если какая-то не загрузилась, остальные продолжают работать
+        models.clear()
+        for (item in ContentCatalog.items) {
+            try {
+                models[item.id] = ObjLoader.load(context, item.asset)
+            } catch (e: Exception) {
+                Log.e(TAG, "model '${item.asset}' load failed: $e")
+                callbacks.onMessage("Не удалось загрузить модель «${item.title}» (${item.asset}): ${e.javaClass.simpleName}")
+            }
         }
         // единичный квадрат в плоскости XZ — подсветка найденной поверхности
         val q = floatArrayOf(
@@ -306,7 +310,7 @@ class PlacementRenderer(
             if (p.anchor.getTrackingState() != ARTrackable.TrackingState.TRACKING) continue
             p.anchor.getPose().toMatrix(tmp, 0)
             // центр объекта: основание + полвысоты вдоль «вверх» якоря (второй столбец матрицы позы)
-            val h = 0.5f * OBJECT_SIZE_M * p.scale
+            val h = 0.5f * ContentCatalog.byId(p.contentId).heightM * p.scale
             projections.add(GuideMath.project(view, proj, tmp[12] + tmp[4] * h, tmp[13] + tmp[5] * h, tmp[14] + tmp[6] * h))
             live.add(p)
         }
@@ -327,7 +331,9 @@ class PlacementRenderer(
             configuring = false,
             showFrame = found == null && controller.mode == PlacementController.Mode.SEARCHING,
             arrowAngleDeg = decision.arrowAngleDeg,
-            focusedLabel = found?.let { "Объект №${it.number}\n«${it.name}»\nцвет: ${ContentCatalog.colorOf(it.colorIdx).name}" },
+            focusedLabel = found?.let {
+                "Объект №${it.number}\n${ContentCatalog.byId(it.contentId).title}\n«${it.name}»\nцвет: ${ContentCatalog.colorOf(it.colorIdx).name}"
+            },
             switchLabel = next?.let { "→ Объект №${live[it].number}" }
         )
     }
@@ -338,11 +344,11 @@ class PlacementRenderer(
         if (last == state) return
         val now = System.currentTimeMillis()
         val onlyAngleChanged = last != null &&
-            last.configuring == state.configuring &&
-            last.showFrame == state.showFrame &&
-            last.focusedLabel == state.focusedLabel &&
-            last.switchLabel == state.switchLabel &&
-            (last.arrowAngleDeg == null) == (state.arrowAngleDeg == null)
+                last.configuring == state.configuring &&
+                last.showFrame == state.showFrame &&
+                last.focusedLabel == state.focusedLabel &&
+                last.switchLabel == state.switchLabel &&
+                (last.arrowAngleDeg == null) == (state.arrowAngleDeg == null)
         if (onlyAngleChanged && now - lastGuideAt < GUIDE_MIN_INTERVAL_MS) return
         lastGuide = state
         lastGuideAt = now
@@ -388,7 +394,6 @@ class PlacementRenderer(
     // ===================== отрисовка =====================
 
     private fun drawScene(planes: List<ARPlane>) {
-        val m = rocket
         GLES20.glEnable(GLES20.GL_DEPTH_TEST)
         GLES20.glDepthMask(true)
         GLES20.glDisable(GLES20.GL_CULL_FACE)
@@ -407,13 +412,16 @@ class PlacementRenderer(
                 countChanged = true
                 continue
             }
-            if (state != ARTrackable.TrackingState.TRACKING || m == null) continue
+            if (state != ARTrackable.TrackingState.TRACKING) continue
+            // модель объекта — по id из метки; не загрузилась (или id устарел) — объект пропускаем
+            val item = ContentCatalog.byId(p.contentId)
+            val mesh = models[item.id] ?: continue
             val tint = ContentCatalog.colorOf(p.colorIdx).rgb
             p.anchor.getPose().toMatrix(model, 0)
             Matrix.rotateM(model, 0, p.yawDeg, 0f, 1f, 0f) // поворот кнопкой — вокруг вертикали объекта
-            val size = OBJECT_SIZE_M * p.scale
+            val size = item.heightM * p.scale
             Matrix.scaleM(model, 0, size, size, size)
-            draw(m, tint[0], tint[1], tint[2], 1f)
+            draw(mesh, tint[0], tint[1], tint[2], 1f)
         }
         if (countChanged) callbacks.onPlacedCountChanged(placed.size)
 
@@ -427,7 +435,7 @@ class PlacementRenderer(
             if (selected != null) {
                 selected.anchor.getPose().toMatrix(model, 0)
                 Matrix.translateM(model, 0, 0f, 0.002f, 0f)
-                val spot = OBJECT_SIZE_M * selected.scale * SELECTION_SPOT_FACTOR
+                val spot = ContentCatalog.byId(selected.contentId).heightM * selected.scale * SELECTION_SPOT_FACTOR
                 Matrix.scaleM(model, 0, spot, 1f, spot)
                 draw(quad, 1f, 0.85f, 0.1f, 0.4f)
             }
@@ -470,9 +478,6 @@ class PlacementRenderer(
     private companion object {
         const val TAG = "PlacementRenderer"
         const val TAP_MAX_MS = 500L
-
-        /** Высота ракеты в метрах (при масштабе 1). */
-        const val OBJECT_SIZE_M = 0.15f
 
         /** Пределы масштаба и шаг поворота для кнопок взаимодействия. */
         const val MIN_SCALE = 0.4f

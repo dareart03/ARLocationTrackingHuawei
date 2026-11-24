@@ -27,4 +27,7 @@ data class GeoFix(
 interface ZoneListener {
     fun onZoneEntered(poi: Poi)
     fun onZoneExited(poi: Poi)
+
+    /** У метки, в зоне которой мы стоим, сменился контент (зона та же). */
+    fun onPoiChanged(poi: Poi) {}
 }

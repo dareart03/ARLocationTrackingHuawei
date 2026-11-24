@@ -43,6 +43,11 @@ class PlacementController(
         listener.onHintChanged(hint(poi, Mode.SEARCHING))
     }
 
+    @Synchronized
+    override fun onPoiChanged(poi: Poi) {
+        if (activePoi?.id == poi.id) activePoi = poi
+    }
+
     /** Выход из зоны: режим сбрасывается. Уже поставленные объекты контроллер не трогает. */
     @Synchronized
     override fun onZoneExited(poi: Poi) {

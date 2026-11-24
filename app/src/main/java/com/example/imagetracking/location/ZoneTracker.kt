@@ -43,6 +43,11 @@ class ZoneTracker(private val exitMargin: Double = EXIT_MARGIN_M) {
      * Принудительно сделать зону активной (только что поставили метку «здесь»).
      * Без этого, стоя в старой зоне, новая метка с другим контентом так и не стала бы активной.
      */
+    /** Подменить активную метку её обновлённой копией (например, сменился контент), без событий входа/выхода. */
+    fun replaceActive(poi: Poi) {
+        if (active?.id == poi.id) active = poi
+    }
+
     fun switchTo(poi: Poi, listener: ZoneListener?) {
         val cur = active
         if (cur?.id == poi.id) return

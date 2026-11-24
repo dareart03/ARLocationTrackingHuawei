@@ -10,12 +10,24 @@ package com.example.imagetracking.ar
  */
 object ContentCatalog {
 
-    class Item(val id: String, val title: String)
+    /**
+     * @param id      ключ, который хранится в метке (в базе) — после выпуска лучше не менять
+     * @param title   название на кнопке и в подписях
+     * @param asset   имя .obj-файла в app/src/main/assets (рядом лежит его .mtl)
+     * @param heightM высота модели в метрах при масштабе 1 (загрузчик сам приводит любую модель к единичной высоте)
+     */
+    class Item(val id: String, val title: String, val asset: String, val heightM: Float)
 
     class TintColor(val name: String, val rgb: FloatArray)
 
+    /**
+     * Чтобы добавить модель: положить tree.obj (+ tree.mtl) в app/src/main/assets и дописать сюда строку, например
+     *     Item("tree", "Дерево", "tree.obj", 0.30f),
+     * Больше ничего менять не нужно: кнопка «Ракета» (она берёт название отсюда) начнёт переключать модели по кругу.
+     */
     val items: List<Item> = listOf(
-        Item("rocket", "Ракета")
+        Item("rocket", "Ракета", "rocket.obj", 0.15f),
+        Item("tree", "Дерево", "tree.obj", 0.30f)
     )
 
     val colors: List<TintColor> = listOf(

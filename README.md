@@ -82,7 +82,14 @@ interface ZoneListener { fun onZoneEntered(poi: Poi); fun onZoneExited(poi: Poi)
 | N ближайших / радиус видимости | `LocationManager.NEAREST_COUNT` / `VISIBILITY_RADIUS_M` | 3 / 200 м |
 | Макс. погрешность GPS для событий зон | `LocationManager.MAX_ACCURACY_M` | 50 м |
 | Мин. время показа подсказки «наведите камеру» | `PlacementController.MIN_SEARCH_HINT_MS` | 1,5 с |
-| Размер ракеты | `PlacementRenderer.OBJECT_SIZE_M` | 0,15 м |
+| Размер модели (высота при масштабе 1) | `heightM` в `ContentCatalog.items` | ракета 0,15 м |
+
+## Как добавить новую модель
+
+1. Положить `tree.obj` и `tree.mtl` в `app/src/main/assets`.
+2. В `ContentCatalog.items` дописать строку: `Item("tree", "Дерево", "tree.obj", 0.30f)`.
+
+Кнопка внизу начнёт переключать модели по кругу, выбранная модель привязывается к новой метке. Загрузчик понимает `v`, `vn`, `f` (в том числе четырёхугольники) и цвета `Kd` из MTL; текстуры не поддерживаются. Высота модели автоматически приводится к 1, основание ставится на плоскость, центр по X/Z выравнивается.
 
 ## Замечания
 

@@ -5,7 +5,7 @@ import java.nio.FloatBuffer
 
 /**
  * 3D-модель из OBJ: вершины вида [x, y, z, nx, ny, nz, r, g, b].
- * Модель нормализуется: высота = 1, основание лежит в плоскости y = 0.
+ * Модель нормализуется: высота = 1, основание лежит в плоскости y = 0, центр по осям X и Z — в начале координат.
  */
 class ObjModel(data: FloatArray) {
     val vertexCount: Int = data.size / FLOATS
@@ -46,19 +46,32 @@ object ObjLoader {
             }
         }
 
-        // нормализация: основание на y = 0, высота = 1
+        // нормализация: основание на y = 0, высота = 1, центр модели по X и Z в начале координат
+        // (иначе модель с началом координат «в углу» висела бы сбоку от точки тапа и вращалась бы не вокруг своей оси)
+        var minX = Float.MAX_VALUE
+        var maxX = -Float.MAX_VALUE
         var minY = Float.MAX_VALUE
         var maxY = -Float.MAX_VALUE
+        var minZ = Float.MAX_VALUE
+        var maxZ = -Float.MAX_VALUE
         for (i in out.indices step ObjModel.FLOATS) {
+            val x = out[i]
             val y = out[i + 1]
+            val z = out[i + 2]
+            if (x < minX) minX = x
+            if (x > maxX) maxX = x
             if (y < minY) minY = y
             if (y > maxY) maxY = y
+            if (z < minZ) minZ = z
+            if (z > maxZ) maxZ = z
         }
         val h = if (maxY > minY) maxY - minY else 1f
+        val cx = (minX + maxX) / 2f
+        val cz = (minZ + maxZ) / 2f
         for (i in out.indices step ObjModel.FLOATS) {
-            out[i] = out[i] / h
+            out[i] = (out[i] - cx) / h
             out[i + 1] = (out[i + 1] - minY) / h
-            out[i + 2] = out[i + 2] / h
+            out[i + 2] = (out[i + 2] - cz) / h
         }
         return ObjModel(out.toFloatArray())
     }
